@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
+import CANNON from 'cannon'
 
 /**
  * Debug
@@ -15,6 +16,57 @@ const canvas = document.querySelector('canvas.webgl')
 
 // Scene
 const scene = new THREE.Scene()
+
+/**
+ * Physics
+ */
+const world = new CANNON.World()
+world.gravity.set(0, -9.82, 0)
+
+const defaultMaterial = new CANNON.Material('default')
+const defaultContactMaterial = new CANNON.ContactMaterial(
+    defaultMaterial,
+    defaultMaterial,
+    {
+        friction: 0.1,
+        restitution: 0.7
+    }
+)
+// world.addContactMaterial(defaultContactMaterial)
+
+// const concreteMaterial = new CANNON.Material('concrete')
+// const plasticMaterial = new CANNON.Material('plastic')
+
+// const concretePlastiContactMaterial = new CANNON.ContactMaterial(
+//     concreteMaterial,
+//     plasticMaterial,
+//     {
+//         friction: 0.1,
+//         restitution: 0.7
+//     }
+// )
+// world.addContactMaterial(concretePlastiContactMaterial)
+
+world.defaultContactMaterial = defaultContactMaterial
+
+// Bodies
+const sphereShape = new CANNON.Sphere(0.5)
+const sphereBody = new CANNON.Body({
+    mass: 1,
+    position: new CANNON.Vec3(0, 3, 0),
+    shape: sphereShape,
+    material: defaultMaterial
+})
+world.addBody(sphereBody)
+
+const floorShape = new CANNON.Plane()
+const floorBody = new CANNON.Body()
+floorBody.mass = 0
+floorBody.addShape(floorShape)
+floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5)
+floorBody.material = defaultMaterial
+
+world.addBody(floorBody)
 
 /**
  * Textures
@@ -89,8 +141,7 @@ const sizes = {
     height: window.innerHeight
 }
 
-window.addEventListener('resize', () =>
-{
+window.addEventListener('resize', () => {
     // Update sizes
     sizes.width = window.innerWidth
     sizes.height = window.innerHeight
@@ -131,10 +182,12 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
  * Animate
  */
 const clock = new THREE.Clock()
+let oldElapsedTime = 0
 
-const tick = () =>
-{
+const tick = () => {
     const elapsedTime = clock.getElapsedTime()
+    const deltaTime = elapsedTime - oldElapsedTime
+    oldElapsedTime = elapsedTime
 
     // Update controls
     controls.update()
@@ -144,6 +197,14 @@ const tick = () =>
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
+
+    world.step(1 / 60, deltaTime, 3)
+    //console.log(sphereBody.position.y)
+    
+    /**
+    * Positioning
+    */
+    sphere.position.copy(sphereBody.position)
 }
 
 tick()
