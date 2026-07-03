@@ -57,6 +57,8 @@ const sphereBody = new CANNON.Body({
     shape: sphereShape,
     material: defaultMaterial
 })
+
+sphereBody.applyLocalForce(new CANNON.Vec3(150, 0, 0), new CANNON.Vec3(0, 0, 0))
 world.addBody(sphereBody)
 
 const floorShape = new CANNON.Plane()
@@ -197,6 +199,9 @@ const tick = () => {
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
+
+    // Update physics
+    sphereBody.applyForce(new CANNON.Vec3(- 0.5, 0, 0), sphereBody.position)
 
     world.step(1 / 60, deltaTime, 3)
     //console.log(sphereBody.position.y)
